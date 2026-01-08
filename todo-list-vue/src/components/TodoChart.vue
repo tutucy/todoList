@@ -54,14 +54,10 @@ let priorityChart = null
 const initCategoryChart = () => {
   if (!categoryChartRef.value) return
   
-  // 先销毁已存在的实例
-  if (categoryChart) {
-    categoryChart.dispose()
-    categoryChart = null
+  // 如果实例不存在，则创建新实例
+  if (!categoryChart) {
+    categoryChart = echarts.init(categoryChartRef.value)
   }
-  
-  // 初始化图表实例
-  categoryChart = echarts.init(categoryChartRef.value)
   
   // 检查实例是否成功创建
   if (!categoryChart) return
@@ -114,7 +110,19 @@ const initCategoryChart = () => {
           shadowOffsetX: 0,
           shadowColor: 'rgba(0, 0, 0, 0.1)'
         },
-        data: [
+        data: props.stats.customCategories ? props.stats.customCategories.map(category => ({
+          value: props.stats.categories[category.id] || 0,
+          name: category.name,
+          itemStyle: {
+            color: {
+              primary: '#3b82f6',
+              info: '#8b5cf6',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444'
+            }[category.color] || '#6b7280'
+          }
+        })) : [
           { value: props.stats.categories.work, name: '工作', itemStyle: { color: '#3b82f6' } },
           { value: props.stats.categories.study, name: '学习', itemStyle: { color: '#8b5cf6' } },
           { value: props.stats.categories.life, name: '生活', itemStyle: { color: '#ec4899' } },
@@ -157,13 +165,10 @@ const initCategoryChart = () => {
 const initCompletionChart = () => {
   if (!completionChartRef.value) return
   
-  // 先销毁已存在的实例
-  if (completionChart) {
-    completionChart.dispose()
-    completionChart = null
+  // 如果实例不存在，则创建新实例
+  if (!completionChart) {
+    completionChart = echarts.init(completionChartRef.value)
   }
-  
-  completionChart = echarts.init(completionChartRef.value)
   
   // 检查实例是否成功创建
   if (!completionChart) return
@@ -248,31 +253,60 @@ const initCompletionChart = () => {
 const initPriorityChart = () => {
   if (!priorityChartRef.value) return
   
-  // 先销毁已存在的实例
-  if (priorityChart) {
-    priorityChart.dispose()
-    priorityChart = null
+  // 如果实例不存在，则创建新实例
+  if (!priorityChart) {
+    priorityChart = echarts.init(priorityChartRef.value)
   }
-  
-  priorityChart = echarts.init(priorityChartRef.value)
   
   // 检查实例是否成功创建
   if (!priorityChart) return
   
-  // 计算优先级分布数据
-  const priorityData = [
-    { name: '高', value: 0, itemStyle: { color: '#ef4444' } },
-    { name: '中', value: 0, itemStyle: { color: '#f59e0b' } },
-    { name: '低', value: 0, itemStyle: { color: '#10b981' } }
-  ]
+  // 获取自定义优先级列表
+  const customPriorities = props.stats.customPriorities || []
+  let priorityData = []
   
-  // 从待办事项中计算优先级分布
-  if (Array.isArray(props.todos)) {
-    props.todos.forEach(todo => {
-      if (todo.priority === 'high') priorityData[0].value++
-      if (todo.priority === 'medium') priorityData[1].value++
-      if (todo.priority === 'low') priorityData[2].value++
-    })
+  // 如果有自定义优先级，则使用自定义优先级
+  if (customPriorities.length > 0) {
+    // 初始化优先级数据
+    priorityData = customPriorities.map(priority => ({
+      name: priority.name,
+      value: 0,
+      itemStyle: {
+        color: {
+          danger: '#ef4444',
+          warning: '#f59e0b',
+          success: '#10b981',
+          primary: '#3b82f6',
+          info: '#8b5cf6'
+        }[priority.color] || '#6b7280'
+      }
+    }))
+    
+    // 从待办事项中计算优先级分布
+    if (Array.isArray(props.todos)) {
+      props.todos.forEach(todo => {
+        const priorityIndex = priorityData.findIndex(p => p.name === customPriorities.find(cp => cp.id === todo.priority)?.name)
+        if (priorityIndex > -1) {
+          priorityData[priorityIndex].value++
+        }
+      })
+    }
+  } else {
+    // 使用默认优先级
+    priorityData = [
+      { name: '高', value: 0, itemStyle: { color: '#ef4444' } },
+      { name: '中', value: 0, itemStyle: { color: '#f59e0b' } },
+      { name: '低', value: 0, itemStyle: { color: '#10b981' } }
+    ]
+    
+    // 从待办事项中计算优先级分布
+    if (Array.isArray(props.todos)) {
+      props.todos.forEach(todo => {
+        if (todo.priority === 'high') priorityData[0].value++
+        if (todo.priority === 'medium') priorityData[1].value++
+        if (todo.priority === 'low') priorityData[2].value++
+      })
+    }
   }
   
   const option = {
@@ -450,17 +484,48 @@ onUnmounted(() => {
 }
 
 /* 响应式设计，在小屏幕上确保图表完整显示 */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .chart-title {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
   .chart-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
   
   .chart-item {
     padding: 15px;
   }
   
+  .chart-subtitle {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  
   .chart {
     height: 250px;
+  }
+  
+  /* 确保全屏宽度的图表在移动端也能正确显示 */
+  .chart-item.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart {
+    height: 220px;
+  }
+  
+  .chart-item {
+    padding: 10px;
   }
 }
 

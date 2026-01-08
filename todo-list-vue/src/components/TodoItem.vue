@@ -3,11 +3,20 @@
     <!-- 查看模式 -->
     <template v-if="!isEditing">
       <div class="todo-content">
-        <el-checkbox 
-          :checked="todo.completed" 
-          @change="toggleCompleted"
-          size="large"
-        />
+        <div class="checkboxes">
+          <el-checkbox 
+            :checked="isSelected" 
+            @change="toggleSelect"
+            size="large"
+            class="select-checkbox"
+          />
+          <el-checkbox 
+            :checked="todo.completed" 
+            @change="toggleCompleted"
+            size="large"
+            class="complete-checkbox"
+          />
+        </div>
         <div class="todo-details">
           <div class="todo-header">
             <h3 class="todo-title" :class="{ 'completed': todo.completed }">
@@ -15,19 +24,28 @@
             </h3>
             <div class="todo-meta">
               <el-tag 
-                v-if="todo.category" 
-                :type="getCategoryType(todo.category)"
-                size="small"
-              >
-                {{ categoryMap[todo.category] }}
-              </el-tag>
-              <el-tag 
-                v-if="todo.priority" 
-                :type="getPriorityType(todo.priority)"
-                size="small"
-              >
-                {{ priorityMap[todo.priority] }}
-              </el-tag>
+                  v-if="todo.category" 
+                  :type="getCategoryType(todo.category)"
+                  size="small"
+                >
+                  {{ getCategoryName(todo.category) }}
+                </el-tag>
+                <el-tag 
+                  v-if="todo.priority" 
+                  :type="getPriorityType(todo.priority)"
+                  size="small"
+                >
+                  {{ getPriorityName(todo.priority) }}
+                </el-tag>
+                <!-- 标签显示 -->
+                <span 
+                  v-for="tagId in (todo.tags || [])" 
+                  :key="tagId"
+                  class="todo-tag"
+                  :style="{ backgroundColor: getTagById(tagId).color + '20', color: getTagById(tagId).color }"
+                >
+                  {{ getTagById(tagId).name }}
+                </span>
             </div>
           </div>
           <p v-if="todo.description" class="todo-description" :class="{ 'completed': todo.completed }">
@@ -125,26 +143,50 @@
         <el-row :gutter="15" style="margin: 15px 0;">
           <el-col :span="12">
             <div class="form-group">
-              <label>分类</label>
-              <el-select v-model="editForm.category" placeholder="请选择分类" size="large" clearable>
-                <el-option label="工作" value="work" />
-                <el-option label="学习" value="study" />
-                <el-option label="生活" value="life" />
-                <el-option label="其他" value="other" />
-              </el-select>
-            </div>
+                <label>分类</label>
+                <el-select v-model="editForm.category" placeholder="请选择分类" size="large" clearable>
+                  <el-option 
+                    v-for="category in customCategories" 
+                    :key="category.id"
+                    :label="category.name" 
+                    :value="category.id" 
+                  />
+                </el-select>
+              </div>
           </el-col>
           <el-col :span="12">
             <div class="form-group">
-              <label>优先级</label>
-              <el-select v-model="editForm.priority" placeholder="请选择优先级" size="large" clearable>
-                <el-option label="高" value="high" />
-                <el-option label="中" value="medium" />
-                <el-option label="低" value="low" />
-              </el-select>
-            </div>
+                <label>优先级</label>
+                <el-select v-model="editForm.priority" placeholder="请选择优先级" size="large" clearable>
+                  <el-option 
+                    v-for="priority in customPriorities" 
+                    :key="priority.id"
+                    :label="priority.name" 
+                    :value="priority.id" 
+                  />
+                </el-select>
+              </div>
           </el-col>
         </el-row>
+        
+        <!-- 标签选择 -->
+        <div class="form-group">
+          <label>标签</label>
+          <el-select 
+            v-model="editForm.tags"
+            placeholder="选择标签（可多选）"
+            size="large"
+            multiple
+            clearable
+          >
+            <el-option 
+              v-for="tag in tags" 
+              :key="tag.id"
+              :label="tag.name" 
+              :value="tag.id" 
+            />
+          </el-select>
+        </div>
         
         <!-- 操作按钮 -->
         <div class="edit-actions">
@@ -163,10 +205,39 @@ const props = defineProps({
   todo: {
     type: Object,
     required: true
+  },
+  isSelected: {
+    type: Boolean,
+    default: false
+  },
+  customCategories: {
+    type: Array,
+    default: () => [
+      { id: 1, name: '工作', color: 'primary' },
+      { id: 2, name: '学习', color: 'info' },
+      { id: 3, name: '生活', color: 'success' },
+      { id: 4, name: '其他', color: 'warning' }
+    ]
+  },
+  customPriorities: {
+    type: Array,
+    default: () => [
+      { id: 1, name: '高', color: 'danger' },
+      { id: 2, name: '中', color: 'warning' },
+      { id: 3, name: '低', color: 'success' }
+    ]
+  },
+  tags: {
+    type: Array,
+    default: () => [
+      { id: 1, name: '重要', color: '#ef4444' },
+      { id: 2, name: '紧急', color: '#f59e0b' },
+      { id: 3, name: '日常', color: '#10b981' }
+    ]
   }
 })
 
-const emit = defineEmits(['toggle', 'delete', 'update'])
+const emit = defineEmits(['toggle', 'delete', 'update', 'toggle-select'])
 
 const isEditing = ref(false)
 const showSubtasks = ref(false)
@@ -176,42 +247,37 @@ const editForm = ref({
   title: '',
   description: '',
   category: '',
-  priority: ''
+  priority: '',
+  tags: []
 })
 
-// 分类和优先级映射
-const categoryMap = {
-  work: '工作',
-  study: '学习',
-  life: '生活',
-  other: '其他'
+// 获取分类名称
+const getCategoryName = (categoryId) => {
+  const category = props.customCategories.find(c => c.id === categoryId)
+  return category ? category.name : ''
 }
 
-const priorityMap = {
-  high: '⭐ 高',
-  medium: '⭐⭐ 中',
-  low: '⭐⭐⭐ 低'
+// 获取标签信息
+const getTagById = (tagId) => {
+  return props.tags.find(tag => tag.id === tagId) || { name: '未知', color: '#6b7280' }
 }
 
 // 获取分类对应的标签类型
-const getCategoryType = (category) => {
-  const typeMap = {
-    work: 'primary',
-    study: 'info',
-    life: 'success',
-    other: 'warning'
-  }
-  return typeMap[category] || 'info'
+const getCategoryType = (categoryId) => {
+  const category = props.customCategories.find(c => c.id === categoryId)
+  return category ? category.color : 'info'
+}
+
+// 获取优先级名称
+const getPriorityName = (priorityId) => {
+  const priority = props.customPriorities.find(p => p.id === priorityId)
+  return priority ? priority.name : ''
 }
 
 // 获取优先级对应的标签类型
-const getPriorityType = (priority) => {
-  const typeMap = {
-    high: 'danger',
-    medium: 'warning',
-    low: 'success'
-  }
-  return typeMap[priority] || 'info'
+const getPriorityType = (priorityId) => {
+  const priority = props.customPriorities.find(p => p.id === priorityId)
+  return priority ? priority.color : 'info'
 }
 
 // 开始编辑
@@ -221,7 +287,8 @@ const startEditing = () => {
     title: props.todo.title,
     description: props.todo.description || '',
     category: props.todo.category || '',
-    priority: props.todo.priority || ''
+    priority: props.todo.priority || '',
+    tags: [...(props.todo.tags || [])]
   }
   isEditing.value = true
 }
@@ -245,6 +312,11 @@ const cancelEdit = () => {
 // 切换完成状态
 const toggleCompleted = () => {
   emit('toggle', props.todo.id)
+}
+
+// 切换选择状态
+const toggleSelect = () => {
+  emit('toggle-select', props.todo.id)
 }
 
 // 删除待办事项
@@ -339,6 +411,22 @@ const getCompletedSubtasksCount = () => {
   flex: 1;
 }
 
+.checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.select-checkbox {
+  margin-bottom: 8px;
+}
+
+.complete-checkbox {
+  margin-top: 8px;
+}
+
 .todo-checkbox {
   margin-top: 8px;
   cursor: pointer;
@@ -415,6 +503,59 @@ const getCompletedSubtasksCount = () => {
   font-weight: 500;
   color: white;
   transition: all 0.3s ease;
+}
+
+/* 标签样式 */
+.todo-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 5px;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.todo-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 标签管理相关样式 */
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tag-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.tag-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tag-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.tag-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .priority-high {
