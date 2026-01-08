@@ -1,0 +1,128 @@
+:root {
+  /* 主色调 */
+  --primary-color: #8b5cf6; /* 亮紫色 - 主色 */
+  --secondary-color: #ec4899; /* 亮粉色 - 辅助色 */
+  --success-color: #10b981; /* 亮绿色 - 成功 */
+  --warning-color: #f59e0b; /* 亮黄色 - 警告 */
+  --danger-color: #ef4444; /* 亮红色 - 危险 */
+  --info-color: #3b82f6; /* 亮蓝色 - 信息 */
+  
+  /* 分类颜色 */
+  --category-work: #3b82f6; /* 工作 - 蓝色 */
+  --category-study: #8b5cf6; /* 学习 - 紫色 */
+  --category-life: #ec4899; /* 生活 - 粉色 */
+  --category-other: #6b7280; /* 其他 - 灰色 */
+  
+  /* 优先级颜色 */
+  --priority-high: #ef4444; /* 高优先级 - 红色 */
+  --priority-medium: #f59e0b; /* 中优先级 - 黄色 */
+  --priority-low: #10b981; /* 低优先级 - 绿色 */
+  
+  /* 中性色 */
+  --bg-color: #f8fafc; /* 页面背景 - 浅灰 */
+  --card-color: #ffffff; /* 卡片背景 - 白色 */
+  --text-primary: #1e293b; /* 主要文本 - 深灰 */
+  --text-secondary: #64748b; /* 次要文本 - 中灰 */
+  --border-color: #e2e8f0; /* 边框颜色 - 淡灰 */
+  --hover-color: #f1f5f9; /* 悬停背景 - 极浅灰 */
+  
+  /* 字体设置 */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  
+  /* 默认颜色模式 - 亮色 */
+  color: var(--text-primary);
+  background-color: var(--bg-color);
+  
+  /* 字体优化 */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+}
+
+#app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  text-align: left;
+}
+
+/* 基础元素样式 */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+p {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* 按钮基础样式 */
+button {
+  border-radius: 8px;
+  border: none;
+  padding: 0.6em 1.2em;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+/* 输入框基础样式 */
+input, textarea, select {
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.6em 1em;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--card-color);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* 链接样式 */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #7c3aed;
+}
